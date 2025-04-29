@@ -4,12 +4,11 @@ import com.example.myapplication.BuildConfig
 import com.example.myapplication.model.ComplexSearchResponse
 import com.example.myapplication.model.Recipe
 import com.example.myapplication.model.RecipeDetails
-import retrofit2.http.GET
-import retrofit2.http.Query
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
 import retrofit2.http.Path
-
+import retrofit2.http.Query
 
 
 interface ApiService {

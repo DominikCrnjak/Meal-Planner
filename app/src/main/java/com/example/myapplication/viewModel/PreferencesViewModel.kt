@@ -19,11 +19,11 @@ class PreferencesViewModel(private val repository: PreferencesRepository) : View
         }
     }
 
-    fun save(diet: String, intolerances: List<String>, cuisine: String) {
+    fun save(diet: String, intolerances: String, cuisine: String) {
         viewModelScope.launch {
             val entity = UserPreferences(
                 diet = diet,
-                intolerances = intolerances.joinToString(","),
+                intolerances = intolerances,
                 cuisine = cuisine
             )
             repository.savePreferences(entity)

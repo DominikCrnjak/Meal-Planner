@@ -10,6 +10,6 @@ class FavoritesViewModelFactory(private val repository: RecipeRepository) : View
             @Suppress("UNCHECKED_CAST")
             return FavoritesViewModel(repository) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw IllegalArgumentException("Unknown ViewModel classs")
     }
 }
