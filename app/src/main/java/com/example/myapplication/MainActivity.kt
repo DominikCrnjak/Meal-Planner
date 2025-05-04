@@ -285,35 +285,77 @@ fun SearchScreen(
                             }
                         }
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = ingredient,
-                            onValueChange = { ingredient = it },
-                            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp),
-                            placeholder = { Text("Dodaj namirnicu") },
-                            shape = MaterialTheme.shapes.large
-                        )
-                        Button(
-                            onClick = {
-                                onShowIngredientsChange(true)
-                                if (ingredient.isNotBlank()) {
-                                    searchViewModel.addIngredient(ingredient)
-                                    ingredient = ""
-                                }
-                            },
-                            shape = MaterialTheme.shapes.large,
-                            modifier = Modifier.height(56.dp)
+                    // lokalna lista prijedloga
+                    val allIngredients = listOf(
+                        "apple", "apricot", "avocado", "bacon", "balsamic vinegar", "banana", "barley", "basil", "bay leaf",
+                        "beef", "beef steak", "beef mince", "beetroot", "bell pepper", "black bean", "blackberry", "blueberry",
+                        "bok choy", "bread", "broccoli", "brown sugar", "butter", "buttermilk", "cabbage", "cantaloupe", "carrot",
+                        "cauliflower", "celery", "cheddar cheese", "cherries", "chicken", "chicken breast", "chicken thighs", "chicken wings",
+                        "chickpeas", "chili", "chocolate", "cinnamon", "cloves", "coconut", "coriander", "curry powder", "dates", "duck",
+                        "egg", "eggplant", "fennel", "feta cheese", "flour", "garlic", "ginger", "goat cheese", "green beans", "green onion",
+                        "honey", "jalapeno", "kale", "lamb", "lemon", "lettuce", "lime", "mango", "maple syrup", "mayonnaise", "melon",
+                        "milk", "mushroom", "mustard", "nutmeg", "oregano", "paprika", "parsley", "pepper", "pork", "pork chops",
+                        "pork belly", "prosciutto", "peas", "pineapple", "plum", "potato", "pumpkin", "quinoa", "radish", "raspberry",
+                        "rice", "rosemary", "sage", "salt", "saffron", "sesame seeds", "sour cream", "soy sauce", "spinach", "squash",
+                        "steak", "striploin", "t-bone", "ribeye", "strawberry", "sugar", "sweet potato", "tahini", "tangerine", "thyme",
+                        "tomato", "tofu", "turkey", "turmeric", "tuna", "veal", "venison", "vanilla", "vinegar", "walnut", "watermelon",
+                        "yogurt", "zucchini"
+                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        var input by remember { mutableStateOf("") }
+
+                        val suggestions = remember(input) {
+                            allIngredients.filter {
+                                it.startsWith(input, ignoreCase = true) && input.isNotBlank()
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Dodaj")
+                            OutlinedTextField(
+                                value = input,
+                                onValueChange = { input = it },
+                                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp),
+                                placeholder = { Text("Dodaj namirnicu") },
+                                shape = MaterialTheme.shapes.large
+                            )
+                            Button(
+                                onClick = {
+                                    if (input.isNotBlank()) {
+                                        searchViewModel.addIngredient(input)
+                                        onShowIngredientsChange(true)
+                                        input = ""
+                                    }
+                                },
+                                shape = MaterialTheme.shapes.large,
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Dodaj")
+                            }
+                        }
+
+                        suggestions.forEach { suggestion ->
+                            Text(
+                                text = suggestion,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        searchViewModel.addIngredient(suggestion)
+                                        onShowIngredientsChange(true)
+                                        input = ""
+                                    }
+                                    .padding(8.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
+
 
                     Spacer(modifier = Modifier.height(12.dp))
 
