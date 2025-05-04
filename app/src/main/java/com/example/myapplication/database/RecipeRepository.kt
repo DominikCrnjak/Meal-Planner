@@ -1,5 +1,6 @@
-package com.example.myapplication.model
+package com.example.myapplication.database
 
+import com.example.myapplication.model.FavoriteRecipe
 import kotlinx.coroutines.flow.Flow
 
 class RecipeRepository(private val recipeDao: RecipeDao) {

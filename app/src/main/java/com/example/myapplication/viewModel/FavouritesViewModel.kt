@@ -2,8 +2,8 @@ package com.example.myapplication.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.database.RecipeRepository
 import com.example.myapplication.model.FavoriteRecipe
-import com.example.myapplication.model.RecipeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 

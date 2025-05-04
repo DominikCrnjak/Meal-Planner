@@ -12,6 +12,8 @@ import retrofit2.http.Query
 
 
 interface ApiService {
+
+    //Pozivi prema API endpointovima
     @GET("recipes/findByIngredients")
     suspend fun getRecipes(
         @Query("ingredients") ingredients: String,
@@ -24,6 +26,7 @@ interface ApiService {
         @Query("includeIngredients") ingredients: String,
         @Query("maxReadyTime") maxReadyTime: Int? = null,
         @Query("number") number: Int = 10,
+        @Query("offset") offset: Int = 0,
         @Query("diet") diet: String? = null,
         @Query("intolerances") intolerances: String? = null,
         @Query("cuisine") cuisine: String? = null,
@@ -36,8 +39,6 @@ interface ApiService {
         @Query("apiKey") apiKey: String = BuildConfig.API_KEY
     ): ComplexSearchResponse
 
-
-
     @GET("recipes/{id}/information")
     suspend fun getRecipeDetails(
         @Path("id") id: Int,
@@ -47,6 +48,7 @@ interface ApiService {
     ): RecipeDetails
 }
 
+//Retrofit je HTTP klijent za Android i Javu koji olakšava slanje API poziva i rad s REST servisima.
 object RetrofitInstance {
     val api: ApiService by lazy {
         Retrofit.Builder()

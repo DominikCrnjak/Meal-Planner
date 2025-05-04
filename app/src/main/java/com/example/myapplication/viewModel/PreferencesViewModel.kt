@@ -2,7 +2,7 @@ package com.example.myapplication.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.model.PreferencesRepository
+import com.example.myapplication.database.PreferencesRepository
 import com.example.myapplication.model.UserPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

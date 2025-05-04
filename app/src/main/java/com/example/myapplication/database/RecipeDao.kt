@@ -1,8 +1,9 @@
-package com.example.myapplication.model
+package com.example.myapplication.database
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import com.example.myapplication.model.FavoriteRecipe
 import kotlinx.coroutines.flow.Flow
 
 @Dao

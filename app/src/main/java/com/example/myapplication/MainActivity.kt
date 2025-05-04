@@ -46,19 +46,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.HtmlCompat
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.myapplication.database.AppDatabase
 import com.example.myapplication.model.FavoriteRecipe
 import com.example.myapplication.viewModel.FavoritesViewModel
-import com.example.myapplication.model.RecipeRepository
+import com.example.myapplication.database.RecipeRepository
 import com.example.myapplication.viewModel.FavoritesViewModelFactory
-import com.example.myapplication.model.PreferencesRepository
+import com.example.myapplication.database.PreferencesRepository
 import com.example.myapplication.viewModel.PreferencesViewModel
 import com.example.myapplication.viewModel.PreferencesViewModelFactory
-import com.example.myapplication.model.RecipeComplex
+import com.example.myapplication.viewModel.SearchViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -119,7 +118,7 @@ fun MealPlannerAppContent(
     val preferences by preferencesViewModel.preferences.collectAsState()
 
     // centralizirano upravljanje stanjem (state lifting)
-    var recipes by remember { mutableStateOf<List<RecipeComplex>>(emptyList()) }
+    //remember kaže Compose-u da zapamti vrijednost između recomposition-a (kad se UI ponovo crta).
     var showIngredients by remember { mutableStateOf(true) }
     var showSearchOptions by remember { mutableStateOf(true) }
     var wasSearchPerformed by remember { mutableStateOf(false) }
@@ -136,8 +135,6 @@ fun MealPlannerAppContent(
         composable("search") {
             SearchScreen(
                 navController = navController,
-                recipes = recipes,
-                onRecipesFetched = { recipes = it },
 
                 showIngredients = showIngredients,
                 onShowIngredientsChange = { showIngredients = it },
@@ -230,113 +227,64 @@ fun AppBar(navController: NavHostController, showSearch: Boolean) {
     )
 }
 
-class SearchViewModel : ViewModel() {
-
-    var ingredientsList = mutableStateOf(listOf<String>())
-        private set
-
-    fun addIngredient(ingredient: String) {
-        ingredientsList.value = ingredientsList.value + ingredient
-    }
-
-    fun removeIngredient(index: Int) {
-        ingredientsList.value = ingredientsList.value.toMutableList().apply { removeAt(index) }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     navController: NavHostController,
-    recipes: List<RecipeComplex>,
-    onRecipesFetched: (List<RecipeComplex>) -> Unit,
-
     showIngredients: Boolean,
     onShowIngredientsChange: (Boolean) -> Unit,
-
     showSearchOptions: Boolean,
     onShowSearchOptionsChange: (Boolean) -> Unit,
-
     wasSearchPerformed: Boolean,
     onSearchPerformed: (Boolean) -> Unit,
-
     diet: String,
     intolerances: List<String>,
     cuisine: String
-
 ) {
-
-    // coroutineScope za pokretanje asinkronih poziva (za API pozive)
     val coroutineScope = rememberCoroutineScope()
-
-    // trenutno uneseni tekst iz input polja (za novu namirnicu)
     var ingredient by remember { mutableStateOf("") }
-
-    // instanca ViewModel-a koji upravlja popisom namirnica
     val searchViewModel: SearchViewModel = viewModel()
-
-    // veza na trenutni popis namirnica iz ViewModela
     var ingredientsList by remember { searchViewModel.ingredientsList }
-
-    // kontroler za skrivanje tipkovnice
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    // maksimalno vrijeme pripreme jela (za slider)
     var maxReadyTime by remember { mutableStateOf(30f) }
-
-    // lista dostupnih načina sortiranja recepata
     val sortOptions = listOf("popularity", "healthiness", "price", "time", "calories")
-
-    // trenutno odabrani kriterij sortiranja
     var selectedSort by remember { mutableStateOf("popularity") }
-
-    // trenutno odabrani smjer sortiranja (asc/desc)
     var selectedDirection by remember { mutableStateOf("desc") }
 
+    val recipes by searchViewModel.recipes
+    val isLoading = searchViewModel.isLoading.value
+
     fun fetchRecipes() {
-        // poziva se samo ako postoji barem jedna unesena namirnica
-        if (ingredientsList.isNotEmpty()) {
-            coroutineScope.launch {
-                val response = RetrofitInstance.api.searchRecipesComplex(
-                    ingredients = ingredientsList.joinToString(","), // spaja namirnice u jedan string
-                    maxReadyTime = maxReadyTime.toInt(),             // konverzija slidera u Int
-                    diet = diet.ifBlank { null },                    // dijeta
-                    intolerances = if (intolerances.isEmpty()) null else intolerances.joinToString(","), // intolerancije
-                    cuisine = cuisine.ifBlank { null },              // kuhinja
-                    sort = selectedSort,                             // način sortiranja
-                    sortDirection = selectedDirection                // smjer sortiranja
-                )
-                // prosljeđujemo rezultate roditeljskoj komponenti
-                onRecipesFetched(response.results)
-            }
-        }
+        searchViewModel.fetchRecipes(
+            ingredients = ingredientsList,
+            maxReadyTime = maxReadyTime.toInt(),
+            diet = diet.ifBlank { null },
+            intolerances = if (intolerances.isEmpty()) null else intolerances.joinToString(","),
+            cuisine = cuisine.ifBlank { null },
+            sort = selectedSort,
+            sortDirection = selectedDirection
+        )
     }
 
-    // glavni composable koji koristi Scaffold za top bar i sadržaj ispod
     Scaffold(topBar = { AppBar(navController, showSearch = false) }) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding) // padding od Scaffold-a (za status bar itd.)
-                .padding(16.dp), // unutarnji padding oko cijelog sadržaja
-            verticalArrangement = Arrangement.spacedBy(12.dp) // razmak između elemenata
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ako je pretraga otvorena (prikazuje se sučelje za unos)
             if (showSearchOptions) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .pointerInput(Unit) {
                             detectVerticalDragGestures { _, dragAmount ->
-                                if (dragAmount < -25) {
-                                    // ako korisnik napravi swipe up, sakrij pretragu
-                                    onShowSearchOptionsChange(false)
-                                }
+                                if (dragAmount < -25) onShowSearchOptionsChange(false)
                             }
                         }
                 ) {
-                    // red za unos namirnice
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -367,9 +315,8 @@ fun SearchScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp)) // razmak ispod unosa
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // slider za max vrijeme pripreme
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text("Maksimalno vrijeme pripreme: ${maxReadyTime.toInt()} min")
                         Slider(
@@ -384,23 +331,10 @@ fun SearchScreen(
                         )
                     }
 
-                    // gumb za pokretanje pretrage
                     Button(
                         onClick = {
                             if (ingredientsList.isNotEmpty()) {
-                                coroutineScope.launch {
-                                    val response = RetrofitInstance.api.searchRecipesComplex(
-                                        ingredients = ingredientsList.joinToString(","),
-                                        maxReadyTime = maxReadyTime.toInt(),
-                                        diet = diet.ifBlank { null },
-                                        intolerances = if (intolerances.isEmpty()) null else intolerances.joinToString(","),
-                                        cuisine = cuisine.ifBlank { null },
-                                        sort = selectedSort,
-                                        sortDirection = selectedDirection
-                                    )
-                                    // rezultat pretrage se sprema
-                                    onRecipesFetched(response.results)
-                                }
+                                fetchRecipes()
                             }
                             onShowIngredientsChange(false)
                             keyboardController?.hide()
@@ -415,7 +349,6 @@ fun SearchScreen(
                         Text("Pronađi recepte")
                     }
 
-                    // sakrij/prikaži popis
                     if (ingredientsList.isNotEmpty()) {
                         OutlinedButton(
                             onClick = { onShowIngredientsChange(!showIngredients) },
@@ -427,7 +360,6 @@ fun SearchScreen(
                     }
                 }
             } else {
-                // prikazuje se kad je pretraga zatvorena
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -443,10 +375,10 @@ fun SearchScreen(
                     OutlinedButton(
                         onClick = {
                             onShowIngredientsChange(true)
-                            onRecipesFetched(emptyList())
+                            searchViewModel.ingredientsList.value = emptyList()
                             onSearchPerformed(false)
                             onShowSearchOptionsChange(true)
-                            searchViewModel.ingredientsList.value = emptyList()
+                            searchViewModel.resetSearch()
                         },
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.large,
@@ -457,7 +389,6 @@ fun SearchScreen(
                 }
             }
 
-            // prikaz popisa unesenih namirnica
             if (showIngredients && ingredientsList.isNotEmpty()) {
                 Divider()
                 Text("Popis namirnica:")
@@ -488,7 +419,6 @@ fun SearchScreen(
                 }
             }
 
-            // Ilustracija koja se prikazuje na samom početku
             if (ingredientsList.isEmpty() && !wasSearchPerformed) {
                 Spacer(modifier = Modifier.height(32.dp))
                 Box(
@@ -508,7 +438,6 @@ fun SearchScreen(
                 }
             }
 
-            // SORTIRANJE i PRIKAZ recepata
             if (recipes.isNotEmpty()) {
                 Divider()
                 Text("Sortiraj po:")
@@ -523,8 +452,6 @@ fun SearchScreen(
                             selected = selectedSort,
                             onSelectedChange = {
                                 selectedSort = it
-
-                                //Prilikom promjene ponovno se fetchaju recepti
                                 fetchRecipes()
                             }
                         )
@@ -533,8 +460,6 @@ fun SearchScreen(
                     IconButton(
                         onClick = {
                             selectedDirection = if (selectedDirection == "asc") "desc" else "asc"
-
-                            //Prilikom promjene ponovno se fetchaju recepti
                             fetchRecipes()
                         },
                         modifier = Modifier
@@ -551,14 +476,12 @@ fun SearchScreen(
                 Text("Pronađeni recepti:")
             }
 
-            // lista recepata (LazyColumn - renderiraju se samo elementi koji su vidljivi)
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(recipes) { recipe ->
                     val calories = recipe.nutrition?.nutrients
                         ?.firstOrNull { it.name == "Calories" }
                         ?.amount?.toInt()
 
-                    //kartica recepta
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -587,10 +510,7 @@ fun SearchScreen(
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = recipe.title,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Text(text = recipe.title, style = MaterialTheme.typography.titleMedium)
                                 Text(
                                     text = "⏱ ${recipe.readyInMinutes} min | ❌ ${recipe.missedIngredientCount} sastojaka fali | 🔥 $calories kcal",
                                     style = MaterialTheme.typography.bodySmall
@@ -599,10 +519,42 @@ fun SearchScreen(
                         }
                     }
                 }
-            }
+                if (wasSearchPerformed && recipes.isNotEmpty()) {
+                item {  Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            searchViewModel.loadMoreRecipes(
+                                maxReadyTime = maxReadyTime.toInt(),
+                                diet = diet,
+                                intolerances = intolerances.joinToString(","),
+                                cuisine = cuisine,
+                                sort = selectedSort,
+                                sortDirection = selectedDirection
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(52.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Prikaži više")
+                    }
+                }  }
+            }}
+
         }
     }
 }
+
 
 
 
@@ -698,7 +650,6 @@ fun RecipeDetailScreen(
         coroutineScope.launch {
             recipeDetails = getRecipeDetails(recipeId)
             isFavorite = viewModel.isFavorite(recipeId.toString())
-            println("🧂 ingredientsList u detail screenu: $ingredientsList")
         }
     }
 
@@ -838,9 +789,6 @@ suspend fun getRecipeDetails(recipeId: Int): RecipeDetails? {
         null
     }
 }
-
-
-
 
 @Composable
 fun UserPreferencesScreen(

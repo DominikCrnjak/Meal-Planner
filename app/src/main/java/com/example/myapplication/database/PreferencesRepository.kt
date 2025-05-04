@@ -1,4 +1,6 @@
-package com.example.myapplication.model
+package com.example.myapplication.database
+
+import com.example.myapplication.model.UserPreferences
 
 class PreferencesRepository(private val dao: UserPreferencesDao) {
     suspend fun getPreferences(): UserPreferences? = dao.getPreferences()

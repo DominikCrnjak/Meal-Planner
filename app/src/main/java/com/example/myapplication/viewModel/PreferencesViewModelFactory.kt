@@ -2,7 +2,7 @@ package com.example.myapplication.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.myapplication.model.PreferencesRepository
+import com.example.myapplication.database.PreferencesRepository
 
 class PreferencesViewModelFactory(
     private val repository: PreferencesRepository

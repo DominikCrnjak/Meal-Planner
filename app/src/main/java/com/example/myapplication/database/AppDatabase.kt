@@ -5,9 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 import com.example.myapplication.model.FavoriteRecipe
-import com.example.myapplication.model.RecipeDao
 import com.example.myapplication.model.UserPreferences
-import com.example.myapplication.model.UserPreferencesDao
 
 @Database(entities = [FavoriteRecipe::class, UserPreferences::class], version = 2 ,exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
