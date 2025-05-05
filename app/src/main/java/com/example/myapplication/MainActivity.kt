@@ -243,12 +243,11 @@ fun SearchScreen(
     cuisine: String
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var ingredient by remember { mutableStateOf("") }
     val searchViewModel: SearchViewModel = viewModel()
     var ingredientsList by remember { searchViewModel.ingredientsList }
     val keyboardController = LocalSoftwareKeyboardController.current
     var maxReadyTime by remember { mutableStateOf(30f) }
-    val sortOptions = listOf("popularity", "healthiness", "price", "time", "calories")
+    val sortOptions = listOf("popularity", "healthiness", "time", "calories")
     var selectedSort by remember { mutableStateOf("popularity") }
     var selectedDirection by remember { mutableStateOf("desc") }
 
@@ -691,6 +690,14 @@ fun RecipeDetailScreen(
 
     val viewModel: FavoritesViewModel = viewModel(factory = viewModelFactory)
 
+    suspend fun getRecipeDetails(recipeId: Int): RecipeDetails? {
+        return try {
+            RetrofitInstance.api.getRecipeDetails(id = recipeId)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     LaunchedEffect(recipeId) {
         coroutineScope.launch {
             recipeDetails = getRecipeDetails(recipeId)
@@ -827,13 +834,6 @@ fun RecipeDetailScreen(
 }
 
 
-suspend fun getRecipeDetails(recipeId: Int): RecipeDetails? {
-    return try {
-        RetrofitInstance.api.getRecipeDetails(id = recipeId)
-    } catch (e: Exception) {
-        null
-    }
-}
 
 @Composable
 fun UserPreferencesScreen(
