@@ -363,9 +363,12 @@ fun SearchScreen(
                         Text("Maksimalno vrijeme pripreme: ${maxReadyTime.toInt()} min")
                         Slider(
                             value = maxReadyTime,
-                            onValueChange = { maxReadyTime = it },
+                            onValueChange = { newValue ->
+                                // Zaokruživanje na najbliži broj koji je djeljiv s 5
+                                maxReadyTime = (newValue / 5).toInt() * 5f
+                            },
                             valueRange = 5f..120f,
-                            steps = 20,
+                            steps = 23,  // 23 koraka između 5 i 120
                             colors = SliderDefaults.colors(
                                 thumbColor = MaterialTheme.colorScheme.primary,
                                 activeTrackColor = MaterialTheme.colorScheme.primary
